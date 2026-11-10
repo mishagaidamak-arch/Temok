@@ -1,0 +1,48 @@
+
+name: Build Komet APK
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Extract project
+        run: |
+          unzip -q Komet-main-video-note-retry.zip
+          test -f Komet-main/pubspec.yaml
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.44.3'
+          channel: stable
+
+      - name: Setup Rust
+        uses: ./Komet-main/.github/actions/setup-rust
+        with:
+          targets: aarch64-linux-android,armv7-linux-androideabi,x86_64-linux-android
+
+      - name: Install dependencies
+        working-directory: Komet-main
+        run: flutter pub get
+
+      - name: Build APK
+        working-directory: Komet-main
+        run: flutter build apk --release --flavor komet
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: komet-android-apk
+          path: Komet-main/build/app/outputs/flutter-apk/app-komet-release.apk
+          retention-days: 30
+          
